@@ -1,0 +1,243 @@
+import struct
+import os
+
+infilepath = 'c:/users/77198/Desktop/zgan.mp4'
+outfilepath = 'c:/users/77198/Desktop/output.txt'
+infile = open(infilepath, 'rb')  # 以二进制打开文件
+outfile = open(outfilepath, 'w')
+
+filesize = os.path.getsize(infilepath)  # 获得文件大小
+print('该文件大小是', filesize, 'byte', "\n")
+outfile.write('该文件大小是 ' + str(filesize) +' byte'+ '\n'+'\n')
+
+MP4Group = {}
+Boxsize = {}
+MoovGroup = {}
+MovBoxsize = {}
+TrakGroup={}
+TrkBoxsize={}
+MidGroup={}
+MidBoxsize={}
+MinfGroup={}
+MinfBoxsize={}
+
+StblGroup={}
+StblBoxsize={}
+StsdGroup={}
+StsdBoxsize={}
+SttsGroup={}
+SttsBoxsize={}
+StszGroup={}
+StszBoxsize={}
+StscGroup={}
+StscBoxsize={}
+StcoGroup={}
+StcoBoxsize={}
+
+
+
+
+
+
+
+
+# def findhead():
+offset = 0
+size = 512
+
+# for offset in range(filesize):
+while offset < filesize:
+    infile.seek(offset)
+    data = infile.read(size)
+
+    data_int = int.from_bytes(data[0:4], byteorder='big', signed=True)
+    if data_int == 1:
+        data_int = int.from_bytes(data[8:16], byteorder='big', signed=True)
+
+    data_str = data[4:8].decode('ascii')
+    data_hex = hex(data_int)
+    print(data[0:4])
+
+    outfile.write('Box类型为：' + data_str + '\n')
+    outfile.write('Box大小为：' + str(data_int) + ' byte' + '\n')
+    outfile.write('大小16进制值为：' + data_hex + '\n')
+    outfile.write('Box绝对偏移为 ' + str(offset) + '\n' + '\n')
+    print(data_int)
+    print(data_str)
+    print(offset)
+
+    MP4Group[data_str] = offset  # 将headboxname的绝对位置存入字典
+    Boxsize[data_str] = data_int  # 将headboxname的大小存入字典
+    offset += data_int#跳过该box位置进行下一轮循环
+
+print('找到的headbox及其位置 ', MP4Group)
+print('headbox对应大小 ', Boxsize)
+
+
+
+
+def readmoov(moovoffset:int, hdbxsize:int):
+ if moovoffset==None:
+    print("moov不存在！")#注意项
+ else:
+    #offset1 = moovoffset
+    totalsize=hdbxsize+moovoffset
+    print(moovoffset)
+
+    while moovoffset < totalsize:
+        infile.seek(moovoffset)
+        data = infile.read(512)
+        modata_int = int.from_bytes(data[8:12], byteorder='big', signed=True)#取大小
+        modata_str = data[12:16].decode('ascii')#取名
+
+        movbodyoffset=moovoffset+modata_int
+
+
+
+
+        MoovGroup[modata_str] = moovoffset+modata_int  # 将headboxname的绝对位置存入字典//存在问题
+        MovBoxsize[modata_str] = modata_int # 将headboxname的大小存入字典
+
+
+#待会写文件绝对偏移输出
+
+        outfile.write('Moov中的Box类型为：' + modata_str + '\n')
+        print(modata_str)
+        outfile.write('Moov中的Box大小为：' + str(modata_int) + ' byte' + '\n')
+        print(modata_int)
+        outfile.write('Box绝对偏移为 ' + str(movbodyoffset) + '\n' + '\n')
+
+        moovoffset=moovoffset+modata_int
+        if moovoffset==hdbxsize+moovoffset:
+            break
+
+
+    print(MoovGroup)
+    print(MovBoxsize)
+
+def readtrak(trakoffset:int, hdbxsize:int):
+    if trakoffset == None:
+        print("trak不存在！")  # 注意项
+    else:
+        totalsize = hdbxsize + trakoffset
+        print(trakoffset)
+
+        while trakoffset < totalsize:
+            infile.seek(trakoffset)
+            data = infile.read(512)
+            trdata_int = int.from_bytes(data[8:12], byteorder='big', signed=True)  # 取大小
+            trdata_str = data[12:16].decode('ascii')  # 取名
+
+            movbodyoffset = trakoffset + trdata_int
+
+            TrakGroup[trdata_str] = trakoffset + trdata_int  # 将headboxname的绝对位置存入字典//存在问题
+            TrkBoxsize[trdata_str] = trdata_int  # 将headboxname的大小存入字典
+
+            # 待会写文件绝对偏移输出
+
+            outfile.write('trak中的Box类型为：' + trdata_str + '\n')
+            print(trdata_str)
+            outfile.write('trak中的Box大小为：' + str(trdata_int) + ' byte' + '\n')
+            print(trdata_int)
+            outfile.write('Box绝对偏移为 ' + str(movbodyoffset) + '\n' + '\n')
+
+            trakoffset = trakoffset + trdata_int
+            if trakoffset == hdbxsize + trakoffset:
+                break
+
+        print(TrakGroup)
+        print(TrkBoxsize)
+
+def readmdia(mdiaoffset:int,hdbxsize:int):
+    if mdiaoffset == None:
+        print("trak不存在！")  # 注意项
+    else:
+        totalsize = hdbxsize + mdiaoffset
+        print(mdiaoffset)
+
+        while mdiaoffset < totalsize:
+            infile.seek(mdiaoffset)
+            data = infile.read(512)
+            mddata_int = int.from_bytes(data[8:12], byteorder='big', signed=True)  # 取大小
+            mddata_str = data[12:16].decode('ascii')  # 取名
+
+            movbodyoffset = mdiaoffset + mddata_int
+
+            TrakGroup[mddata_str] = mdiaoffset + mddata_int  # 将headboxname的绝对位置存入字典//存在问题
+            TrkBoxsize[mddata_str] = mddata_int  # 将headboxname的大小存入字典
+
+            # 待会写文件绝对偏移输出
+
+            outfile.write('trak中的Box类型为：' + mddata_str + '\n')
+            print(mddata_str)
+            outfile.write('trak中的Box大小为：' + str(mddata_int) + ' byte' + '\n')
+            print(mddata_int)
+            outfile.write('Box绝对偏移为 ' + str(movbodyoffset) + '\n' + '\n')
+
+            mdiaoffset = mdiaoffset + mddata_int
+            if mdiaoffset == hdbxsize + mdiaoffset:
+                break
+
+# def readminf(minfoffset:int,hdbxsize:int):
+# def readstbl(stbloffset:int,hdbxsize:int):
+# def readstsd(stsdoffset:int,hdbxsize:int):
+# def readstts(sttsoffset:int,hdbxsize:int):
+# def readstsz(stszoffset:int,hdbxsize:int):
+# def readstsc(stscoffset:int,hdbxsize:int):
+# def readstco(stcooffset:int,hdbxsize:int):
+
+
+
+
+
+
+readmoov(MP4Group.get('moov'), Boxsize.get('moov'))
+#readtrak(MoovGroup.get('trak'),MovBoxsize.get('trak'))
+
+
+#print(MoovGroup.get('kkf')) #None
+infile.close()
+outfile.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+seek指针—>数据块起始
+for 数据块 in 数据流
+     if 数据流内容==关键词块
+	指针-4字节
+	读4字节，得关键词文件大小
+
+						
+
+
+
+
+def getsizebig(data,pos,sizes):
+	a=0
+	b=1
+	for i in range(sizez)
+	 a+=data[pos+sizez-1-i]*b
+	 b=b*256
+	return a
+
+
+for i in rage(size()-16):
+	if getsizebig(data,i，4）=0x6d646961:
+	print(offset+i)
+
+
+
+
